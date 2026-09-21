@@ -1,0 +1,6 @@
+{
+  "name": "Cloudbeds PMS & Booking Engine",
+  "description": "Nền tảng quản lý tài sản khách sạn (PMS), đồng bộ kênh phân phối Channel Manager thời gian thực và công cụ đặt phòng trực tiếp Booking Engine.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
