@@ -25,6 +25,7 @@ interface ChannelManagerViewProps {
   onUpdateMarkup: (channelId: string, newMarkup: number) => void;
   onTriggerFullSync: () => void;
   onSimulateInboundOtaBooking: (channelName: 'Booking.com' | 'Agoda' | 'Expedia') => void;
+  onNavigateToRateMatrix?: () => void;
   isSyncing: boolean;
 }
 
@@ -36,6 +37,7 @@ export const ChannelManagerView: React.FC<ChannelManagerViewProps> = ({
   onUpdateMarkup,
   onTriggerFullSync,
   onSimulateInboundOtaBooking,
+  onNavigateToRateMatrix,
   isSyncing,
 }) => {
   const [selectedChannel, setSelectedChannel] = useState<ChannelConnection | null>(channels[1] || null); // default Booking.com
@@ -67,6 +69,16 @@ export const ChannelManagerView: React.FC<ChannelManagerViewProps> = ({
 
           {/* Quick Actions */}
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full lg:w-auto">
+            {onNavigateToRateMatrix && (
+              <button
+                onClick={onNavigateToRateMatrix}
+                className="px-4 py-2.5 rounded-xl font-bold text-xs bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-200 border border-indigo-400/30 transition flex items-center justify-center gap-2 cursor-pointer"
+              >
+                <Sliders className="w-3.5 h-3.5 text-indigo-300" />
+                <span>Thiết lập Tồn kho & Giá OTA</span>
+              </button>
+            )}
+
             <button
               onClick={onTriggerFullSync}
               disabled={isSyncing}
@@ -251,12 +263,23 @@ export const ChannelManagerView: React.FC<ChannelManagerViewProps> = ({
                   </div>
                 )}
 
-                {/* Bottom latency and status */}
-                <div className="mt-3 flex items-center justify-between text-[11px] text-slate-500">
-                  <span>Tồn kho kết nối: {channel.activeListingsCount} phòng</span>
+                {/* Bottom latency, status and link to matrix */}
+                <div className="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500">
                   <span className="font-medium text-emerald-600 flex items-center gap-1">
-                    <CheckCircle2 className="w-3.5 h-3.5" /> Độ trễ API: {channel.latencyMs}ms
+                    <CheckCircle2 className="w-3.5 h-3.5" /> {channel.latencyMs}ms
                   </span>
+                  {onNavigateToRateMatrix && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onNavigateToRateMatrix();
+                      }}
+                      className="text-[11px] font-bold text-indigo-600 hover:text-indigo-800 flex items-center gap-1 cursor-pointer"
+                    >
+                      <span>Cấu hình tồn kho & giá</span>
+                      <ArrowUpRight className="w-3 h-3" />
+                    </button>
+                  )}
                 </div>
               </div>
             );
@@ -283,50 +306,62 @@ export const ChannelManagerView: React.FC<ChannelManagerViewProps> = ({
           </div>
 
           <div className="overflow-x-auto">
-            <table className="w-full text-xs text-left">
-              <thead>
-                <tr className="bg-slate-100 text-slate-700 border-b border-slate-200">
-                  <th className="p-3 font-bold">Hạng phòng</th>
-                  <th className="p-3 font-bold">Giá sàn PMS</th>
-                  <th className="p-3 font-bold text-emerald-700">Direct Booking (Giảm 10%)</th>
-                  <th className="p-3 font-bold text-blue-800">Booking.com (+15%)</th>
-                  <th className="p-3 font-bold text-sky-700">Agoda (+18%)</th>
-                  <th className="p-3 font-bold">Trạng thái Parity</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {roomTypes.map((rt) => {
-                  const directPrice = Math.round(rt.basePrice * 0.9);
-                  const bdcPrice = Math.round(rt.basePrice * 1.15);
-                  const agodaPrice = Math.round(rt.basePrice * 1.18);
+            {(() => {
+              const agodaChan = channels.find((c) => c.name === 'Agoda');
+              const bdcChan = channels.find((c) => c.name === 'Booking.com');
+              const directChan = channels.find((c) => c.name === 'Direct');
 
-                  return (
-                    <tr key={rt.id} className="hover:bg-slate-50 transition">
-                      <td className="p-3 font-bold text-slate-900 flex items-center gap-2">
-                        <span>{rt.name}</span>
-                      </td>
-                      <td className="p-3 font-mono font-bold text-slate-700">
-                        {rt.basePrice.toLocaleString('vi-VN')} đ
-                      </td>
-                      <td className="p-3 font-mono font-bold text-emerald-700 bg-emerald-50/40">
-                        {directPrice.toLocaleString('vi-VN')} đ
-                      </td>
-                      <td className="p-3 font-mono font-bold text-blue-800">
-                        {bdcPrice.toLocaleString('vi-VN')} đ
-                      </td>
-                      <td className="p-3 font-mono font-bold text-sky-700">
-                        {agodaPrice.toLocaleString('vi-VN')} đ
-                      </td>
-                      <td className="p-3">
-                        <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 bg-emerald-100 text-emerald-800 rounded-full">
-                          <CheckCircle2 className="w-3 h-3" /> Đã đồng bộ
-                        </span>
-                      </td>
+              const agodaMarkup = agodaChan ? agodaChan.markupPercent : 18;
+              const bdcMarkup = bdcChan ? bdcChan.markupPercent : 15;
+              const directDiscount = directChan ? Math.abs(directChan.markupPercent) : 10;
+
+              return (
+                <table className="w-full text-xs text-left">
+                  <thead>
+                    <tr className="bg-slate-100 text-slate-700 border-b border-slate-200">
+                      <th className="p-3 font-bold">Hạng phòng</th>
+                      <th className="p-3 font-bold">Giá sàn PMS</th>
+                      <th className="p-3 font-bold text-emerald-700">Direct Booking (-{directDiscount}%)</th>
+                      <th className="p-3 font-bold text-blue-800">Booking.com (+{bdcMarkup}%)</th>
+                      <th className="p-3 font-bold text-sky-700">Agoda (+{agodaMarkup}%)</th>
+                      <th className="p-3 font-bold">Trạng thái Parity</th>
                     </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {roomTypes.map((rt) => {
+                      const directPrice = Math.round(rt.basePrice * (1 - directDiscount / 100));
+                      const bdcPrice = Math.round(rt.basePrice * (1 + bdcMarkup / 100));
+                      const agodaPrice = Math.round(rt.basePrice * (1 + agodaMarkup / 100));
+
+                      return (
+                        <tr key={rt.id} className="hover:bg-slate-50 transition">
+                          <td className="p-3 font-bold text-slate-900 flex items-center gap-2">
+                            <span>{rt.name}</span>
+                          </td>
+                          <td className="p-3 font-mono font-bold text-slate-700">
+                            {rt.basePrice.toLocaleString('vi-VN')} đ
+                          </td>
+                          <td className="p-3 font-mono font-bold text-emerald-700 bg-emerald-50/40">
+                            {directPrice.toLocaleString('vi-VN')} đ
+                          </td>
+                          <td className="p-3 font-mono font-bold text-blue-800">
+                            {bdcPrice.toLocaleString('vi-VN')} đ
+                          </td>
+                          <td className="p-3 font-mono font-bold text-sky-700">
+                            {agodaPrice.toLocaleString('vi-VN')} đ
+                          </td>
+                          <td className="p-3">
+                            <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 bg-emerald-100 text-emerald-800 rounded-full">
+                              <CheckCircle2 className="w-3 h-3" /> Đã đồng bộ
+                            </span>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              );
+            })()}
           </div>
 
           <div className="mt-4 p-3 bg-slate-50 border border-slate-200 rounded-lg flex items-start gap-2.5 text-xs text-slate-600">

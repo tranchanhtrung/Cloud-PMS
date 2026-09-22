@@ -101,3 +101,28 @@ export interface DailyRateSetting {
   stopSell: boolean;
   minStay: number;
 }
+
+export interface ChannelAllotmentSetting {
+  channel: ChannelType | 'ALL';
+  roomTypeId: string;
+  date: string;
+  allotment: number; // Số lượng phòng mở bán trên kênh
+  rate: number; // Giá bán trên kênh này
+  stopSell: boolean; // Khóa bán
+  minStay: number; // Số đêm tối thiểu
+}
+
+export interface BulkOtaUpdatePayload {
+  channels: (ChannelType | 'ALL')[];
+  roomTypeIds: string[];
+  startDate: string;
+  endDate: string;
+  daysOfWeek: number[]; // 0: CN, 1: T2, ..., 6: T7
+  allotmentMode?: 'fixed' | 'max_available' | 'keep';
+  allotment?: number;
+  rateMode?: 'fixed' | 'percentage_adjust' | 'keep';
+  fixedRate?: number;
+  rateAdjustmentPercent?: number;
+  stopSell?: boolean;
+  minStay?: number;
+}

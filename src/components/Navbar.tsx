@@ -151,7 +151,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           }`}
         >
           <DollarSign className="w-4 h-4" />
-          <span>Bảng giá & Đóng/Mở phòng</span>
+          <span>Thiết lập Tồn kho & Giá OTA (Allotment)</span>
         </button>
 
         <button

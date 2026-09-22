@@ -309,9 +309,13 @@ export default function App() {
   }, []);
 
   // Channel markup update
-  const handleUpdateMarkup = useCallback((channelId: string, newMarkup: number) => {
+  const handleUpdateMarkup = useCallback((channelIdentifier: string, newMarkup: number) => {
     setChannels((prev) =>
-      prev.map((ch) => (ch.id === channelId ? { ...ch, markupPercent: newMarkup } : ch))
+      prev.map((ch) =>
+        ch.id === channelIdentifier || ch.name === channelIdentifier
+          ? { ...ch, markupPercent: newMarkup, lastSyncTime: 'Vừa xong' }
+          : ch
+      )
     );
   }, []);
 
@@ -368,6 +372,7 @@ export default function App() {
             onUpdateMarkup={handleUpdateMarkup}
             onTriggerFullSync={handleSyncAllChannels}
             onSimulateInboundOtaBooking={handleSimulateInboundOtaBooking}
+            onNavigateToRateMatrix={() => setActiveTab('ratematrix')}
             isSyncing={isSyncing}
           />
         )}
@@ -398,7 +403,12 @@ export default function App() {
         {activeTab === 'ratematrix' && (
           <RateMatrixView
             roomTypes={roomTypes}
+            rooms={rooms}
+            reservations={reservations}
+            channels={channels}
             onTriggerSync={handleSyncAllChannels}
+            onAddSyncLog={(newLog) => setSyncLogs((prev) => [newLog, ...prev])}
+            onUpdateMarkup={handleUpdateMarkup}
             isSyncing={isSyncing}
           />
         )}
